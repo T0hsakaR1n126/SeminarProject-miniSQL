@@ -1,5 +1,4 @@
-C++ Smart Pointer Programming Exercise: A Simple Library Management System
----created by Zheyuan Fu, email: zheyuan.fu@uzh.ch
+C++ Project MiniSQL
 
 1.C++ Development Environment Setup Guide
 
@@ -25,25 +24,26 @@ b. Verify installation by running 'clang++ --version' in Terminal.
 2.Problem Description
 
 
-4.Compile and run the program
+2.Compile and Run the Project
 
 (1)Windows(MSYS2):
 a. Run ucrt64.exe in MSYS2 folder(Yellow one).
-b. Use command('cd') to Change the current working directory to the program's location.
-c. Use ' g++ -o Templates Templates.cpp ' to compile the code and a Templates.exe file will be generated.('Templates' should changed to your program's name.)
-d. Use './Templates.exe ' to run the program.('Templates' should changed to your program's name.)
+b. Use command('cd') to Change the current working directory to the location of file 'src'.
+c. Use ' g++ -o ../bin/minisql main.cpp minisql.cpp Helper.cpp ' to compile the code and a minisql.exe file will be generated.
+d. Use './../bin/minisql.exe ' to run the project.
 
 (2)Linux(Recommend):
-a. Use command('cd') to Change the current working directory to the program's location.
-b. Use ' g++ -o Templates Templates.cpp ' to compile the code and a task4a file will be generated, this file do not have .exe with it.('Templates' should changed to your program's name.)
-c. Use './Templates ' to run the program.('Templates' should changed to your program's name.)
-
-(3)
+a. Use command('cd') to Change the current working directory to the location of file 'src'.
+b. Use ' g++ -o ../bin/minisql main.cpp minisql.cpp Helper.cpp ' to compile the code and a minisql file will be generated, this file do not have .exe with it.
+c. Use './../bin/minisql ' to run the project.
+(3)Mac
 a.Open Terminal from Applications/Utilities folder or search via Spotlight.
-b.Use command('cd') to Change the current working directory to the program's location.
-c.Compile the code using ' clang++ -o Templates Templates.cpp ' to compile the code and a task4a file will be generated, this file do not have .exe with it.('Templates' should changed to your program's name.)
-d.Use './Templates ' to run the program.('Templates' should changed to your program's name.)
+b.Use command('cd') to Change the current working directory to the location of file 'src'.
+c.Compile the code using ' clang++ -o Templates Templates.cpp ' to compile the code and a minisql file will be generated, this file do not have .exe with it.
+d.Use './../bin/minisql ' to run the project.
 
+3.A Brief Introduction
+This is a lightweight SQL database engine, called MiniSQL developed using C++. The project utilizes smart pointers and LRU mechanism for memory lifecycle management, STL containers for processing data collections, regular expressions for parsing SQL statements, and file system operations for data persistence. MiniSQL now supports standard SQL operations CREATE, INSERT, SELECT, JOIN, UPDATE, and DELETE, and has WHERE condition filtering and basic query optimization functions. It uses CSV format for data storage and loading.
 
 
 

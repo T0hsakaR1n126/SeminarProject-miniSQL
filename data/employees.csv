@@ -1,0 +1,11 @@
+id,name,age,salary,department_id
+1,Alice,28,55000,1
+2,Bob,35,65000,2
+3,Charlie,22,45000,3
+4,David,42,75000,1
+5,Eva,26,50000,4
+6,Frank,31,60000,1
+7,Grace,29,58000,2
+8,Henry,24,47000,3
+9,Ivy,38,70000,4
+10,Jack,27,52000,1

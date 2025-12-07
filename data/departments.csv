@@ -1,0 +1,6 @@
+dept_id,dept_name,location,budget,manager
+1,Engineering,New York,1000000,David
+2,Sales,Chicago,800000,Bob
+3,Marketing,Los Angeles,600000,Charlie
+4,HR,Boston,500000,Eva
+5,Finance,San Francisco,900000,Frank
