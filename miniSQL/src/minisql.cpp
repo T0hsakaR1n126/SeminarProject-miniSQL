@@ -274,7 +274,7 @@ vector<Row> JoinOptimizer::optimizeJoin(const Table& left_table, const Table& ri
     return (left_size < 1000 && right_size < 1000) ? nestedLoopJoin(left_table, right_table, columns, join_type, condition, where_clause) : hashJoin(left_table, right_table, columns, join_type, condition, where_clause);
 }
 
-vector<Row> JoinOptimizer::nestedLoopJoin(const Table& left_table, const Table& right_table, const vector<string>& columns,JoinType join_type,const JoinCondition& condition,const shared_ptr<LogicExpression>& where_clause) {
+vector<Row> JoinOptimizer::nestedLoopJoin(const Table& left_table, const Table& right_table, const vector<string>& columns, JoinType join_type, const JoinCondition& condition, const shared_ptr<LogicExpression>& where_clause) {
     
     vector<Row> result;
     
@@ -295,6 +295,9 @@ vector<Row> JoinOptimizer::nestedLoopJoin(const Table& left_table, const Table& 
     
     bool select_all = (columns.size() == 1 && columns[0] == "*");
     
+    vector<string> all_columns_for_where = left_cols;
+    all_columns_for_where.insert(all_columns_for_where.end(), right_cols.begin(), right_cols.end());
+    
     for (const auto& left_row : left_table.getAllRows()) {
         for (const auto& right_row : right_table.getAllRows()) {
             bool match = false;
@@ -307,53 +310,62 @@ vector<Row> JoinOptimizer::nestedLoopJoin(const Table& left_table, const Table& 
             
             if (match) {
                 vector<Value> joined_values;
+                vector<Value> all_values_for_where; 
                 vector<string> where_eval_columns;
                 
                 if (select_all) {
-                    for (const auto& val : left_row.values()) joined_values.push_back(val);
-                    for (const auto& val : right_row.values()) joined_values.push_back(val);
-                    where_eval_columns = left_cols;
-                    where_eval_columns.insert(where_eval_columns.end(), right_cols.begin(), right_cols.end());
+                    for (const auto& val : left_row.values()) {
+                        joined_values.push_back(val);
+                        all_values_for_where.push_back(val);
+                    }
+                    for (const auto& val : right_row.values()) {
+                        joined_values.push_back(val);
+                        all_values_for_where.push_back(val);
+                    }
+                    where_eval_columns = all_columns_for_where;
                 } else {
                     for (const auto& col_name : columns) {
                         size_t dot_pos = col_name.find('.');
-                        
                         if (dot_pos != string::npos) {
                             string table_name = col_name.substr(0, dot_pos);
                             string column_name = col_name.substr(dot_pos + 1);
-                            
                             if (table_name == left_table.name()) {
                                 int col_idx = left_table.getColumnIndex(column_name);
                                 if (col_idx != -1) {
                                     joined_values.push_back(left_row[col_idx]);
-                                    where_eval_columns.push_back(column_name);
                                 }
                             } else if (table_name == right_table.name()) {
                                 int col_idx = right_table.getColumnIndex(column_name);
                                 if (col_idx != -1) {
                                     joined_values.push_back(right_row[col_idx]);
-                                    where_eval_columns.push_back(column_name);
                                 }
                             }
                         } else {
                             int col_idx = left_table.getColumnIndex(col_name);
                             if (col_idx != -1) {
                                 joined_values.push_back(left_row[col_idx]);
-                                where_eval_columns.push_back(col_name);
                             } else {
                                 col_idx = right_table.getColumnIndex(col_name);
                                 if (col_idx != -1) {
                                     joined_values.push_back(right_row[col_idx]);
-                                    where_eval_columns.push_back(col_name);
                                 }
                             }
                         }
                     }
+                    
+                    for (const auto& val : left_row.values()) {
+                        all_values_for_where.push_back(val);
+                    }
+                    for (const auto& val : right_row.values()) {
+                        all_values_for_where.push_back(val);
+                    }
+                    where_eval_columns = all_columns_for_where;
                 }
                 
                 Row joined_row(joined_values);
+                Row where_eval_row(all_values_for_where); 
                 
-                if (!where_clause || ConditionEvaluator::evaluate(joined_row, where_eval_columns, where_clause)) {
+                if (!where_clause || ConditionEvaluator::evaluate(where_eval_row, where_eval_columns, where_clause)) {
                     result.push_back(joined_row);
                 }
             }
@@ -390,6 +402,10 @@ vector<Row> JoinOptimizer::hashJoin(const Table& left_table, const Table& right_
     for (const auto& col : left_table.columns()) left_cols.push_back(col.name);
     for (const auto& col : right_table.columns()) right_cols.push_back(col.name);
     
+    // 创建完整的列名列表用于WHERE评估
+    vector<string> all_columns_for_where = left_cols;
+    all_columns_for_where.insert(all_columns_for_where.end(), right_cols.begin(), right_cols.end());
+    
     // construct hash table
     unordered_multimap<Value, const Row*> hash_table;
     for (const auto& row : build_table.getAllRows()) {
@@ -407,19 +423,30 @@ vector<Row> JoinOptimizer::hashJoin(const Table& left_table, const Table& right_
             const Row* build_row = it->second;
             
             vector<Value> joined_values;
+            vector<Value> all_values_for_where; 
             vector<string> where_eval_columns;
             
             if (select_all) {
                 if (&build_table == &left_table) {
-                    for (const auto& val : build_row->values()) joined_values.push_back(val);
-                    for (const auto& val : probe_row.values()) joined_values.push_back(val);
-                    where_eval_columns = left_cols;
-                    where_eval_columns.insert(where_eval_columns.end(), right_cols.begin(), right_cols.end());
+                    for (const auto& val : build_row->values()) {
+                        joined_values.push_back(val);
+                        all_values_for_where.push_back(val);
+                    }
+                    for (const auto& val : probe_row.values()) {
+                        joined_values.push_back(val);
+                        all_values_for_where.push_back(val);
+                    }
+                    where_eval_columns = all_columns_for_where;
                 } else {
-                    for (const auto& val : probe_row.values()) joined_values.push_back(val);
-                    for (const auto& val : build_row->values()) joined_values.push_back(val);
-                    where_eval_columns = left_cols;
-                    where_eval_columns.insert(where_eval_columns.end(), right_cols.begin(), right_cols.end());
+                    for (const auto& val : probe_row.values()) {
+                        joined_values.push_back(val);
+                        all_values_for_where.push_back(val);
+                    }
+                    for (const auto& val : build_row->values()) {
+                        joined_values.push_back(val);
+                        all_values_for_where.push_back(val);
+                    }
+                    where_eval_columns = all_columns_for_where;
                 }
             } else {
                 for (const auto& col_name : columns) {
@@ -432,14 +459,12 @@ vector<Row> JoinOptimizer::hashJoin(const Table& left_table, const Table& right_
                             int col_idx = left_table.getColumnIndex(column_name);
                             if (col_idx != -1) {
                                 joined_values.push_back((&build_table == &left_table) ? (*build_row)[col_idx] : probe_row[col_idx]);
-                                where_eval_columns.push_back(column_name);
                                 found = true;
                             }
                         } else if (table_name == right_table.name()) {
                             int col_idx = right_table.getColumnIndex(column_name);
                             if (col_idx != -1) {
                                 joined_values.push_back((&build_table == &right_table) ? (*build_row)[col_idx] : probe_row[col_idx]);
-                                where_eval_columns.push_back(column_name);
                                 found = true;
                             }
                         }
@@ -447,27 +472,43 @@ vector<Row> JoinOptimizer::hashJoin(const Table& left_table, const Table& right_
                         int col_idx = left_table.getColumnIndex(col_name);
                         if (col_idx != -1) {
                             joined_values.push_back((&build_table == &left_table) ? (*build_row)[col_idx] : probe_row[col_idx]);
-                            where_eval_columns.push_back(col_name);
                             found = true;
                         } else {
                             col_idx = right_table.getColumnIndex(col_name);
                             if (col_idx != -1) {
                                 joined_values.push_back((&build_table == &right_table) ? (*build_row)[col_idx] : probe_row[col_idx]);
-                                where_eval_columns.push_back(col_name);
                                 found = true;
                             }
                         }
                     }
-                    
+    
                     if (!found) {
                         cout << "Warning: Column '" << col_name << "' not found in join tables" << endl;
                     }
                 }
+
+                if (&build_table == &left_table) {
+                    for (const auto& val : build_row->values()) {
+                        all_values_for_where.push_back(val);
+                    }
+                    for (const auto& val : probe_row.values()) {
+                        all_values_for_where.push_back(val);
+                    }
+                } else {
+                    for (const auto& val : probe_row.values()) {
+                        all_values_for_where.push_back(val);
+                    }
+                    for (const auto& val : build_row->values()) {
+                        all_values_for_where.push_back(val);
+                    }
+                }
+                where_eval_columns = all_columns_for_where;
             }
 
             Row joined_row(joined_values);
-
-            if (!where_clause || ConditionEvaluator::evaluate(joined_row, where_eval_columns, where_clause)) {
+            Row where_eval_row(all_values_for_where);
+            
+            if (!where_clause || ConditionEvaluator::evaluate(where_eval_row, where_eval_columns, where_clause)) {
                 result.push_back(joined_row);
             }
         }
@@ -705,7 +746,7 @@ shared_ptr<LogicExpression> WhereParser::parseExpression(const string& expr_str,
         return nullptr;
     }
     
-    //Parsing the OR operator (using findOuterOperator to account for parentheses)
+    //Parsing the OR operator
     size_t or_pos = findOuterOperator(str, "OR");
     if (or_pos != string::npos) {
         string left_str = trim(str.substr(0, or_pos));
@@ -736,7 +777,7 @@ shared_ptr<LogicExpression> WhereParser::parseExpression(const string& expr_str,
     size_t and_pos = findOuterOperator(str, "AND");
     if (and_pos != string::npos) {
         string left_str = trim(str.substr(0, and_pos));
-        string right_str = trim(str.substr(and_pos + 3)); // "AND"长度3
+        string right_str = trim(str.substr(and_pos + 3));
         
         if (left_str.empty() || right_str.empty()) {
             cerr << "Error: Missing operand for AND operator" << endl;
@@ -838,6 +879,7 @@ shared_ptr<LogicExpression> WhereParser::parseExpression(const string& expr_str,
             }
         }
     }
+    
     // SingleCondition
     return parseSingleCondition(str, columns);
 }

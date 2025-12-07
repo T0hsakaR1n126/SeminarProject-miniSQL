@@ -88,7 +88,7 @@ vector<Column> parseColumnDefinitions(const string& columns_str) {
         
         size_t last_space = column_def.find_last_of(' ');
         if (last_space == string::npos) {
-            cerr << "Error: Invalid column definition: " << column_def << endl;
+            cerr << "Error Command! Invalid column definition: " << column_def << endl;
             continue;
         }
         
@@ -184,7 +184,7 @@ unordered_map<string, Value> parseUpdateSet(const string& set_clause, const shar
     for (const auto& assignment : assignments) {
         size_t equal_pos = assignment.find('=');
         if (equal_pos == string::npos) {
-            cout << "Error: Invalid assignment: " << assignment << endl;
+            cout << "Error Command! Invalid assignment: " << assignment << endl;
             continue;
         }
         
@@ -332,7 +332,7 @@ bool processCommand(MiniSQL& db, const string& input) {
         return false;
     }
     
-    cout << "Unknown command. Type HELP for available commands" << endl;
+    cout << "Unknown command. Type 'HELP;' for available commands" << endl;
     return false;
 }
 
@@ -341,14 +341,13 @@ void handleCreateTable(MiniSQL& db, const string& input) {
     size_t close_paren = input.rfind(')');
     
     if (open_paren == string::npos || close_paren == string::npos || close_paren <= open_paren) {
-        cout << "Error: Invalid CREATE TABLE syntax." << endl;
-        cout << "Correct format: CREATE TABLE table_name (col1 type, col2 type, ...)" << endl;
+        cout << "Error Command! Invalid CREATE TABLE syntax." << endl;
         return;
     }
     
     string table_name = trim(input.substr(12, open_paren - 12));
     if (table_name.empty()) {
-        cout << "Error: Table name cannot be empty" << endl;
+        cout << "Error Command! Table name cannot be empty" << endl;
         return;
     }
     
@@ -362,7 +361,7 @@ void handleCreateTable(MiniSQL& db, const string& input) {
     
     db.createTable(table_name, columns, table_name + ".csv");
     
-    cout << "Table created successfully. Columns: ";
+    cout <<"Columns: ";
     for (size_t i = 0; i < columns.size(); ++i) {
         cout << columns[i].name << " " << columns[i].type;
         if (columns[i].type == "VARCHAR" && columns[i].varchar_length > 0) {
@@ -573,14 +572,14 @@ void handleJoinSelect(MiniSQL& db, const string& input, bool has_save_as, const 
         }
         
         if (columns.empty()) {
-            cout << "Error: No columns specified in SELECT" << endl;
+            cout << "Error Command! No columns specified in SELECT" << endl;
             return;
         }
         
         // Parse JOIN conditions
         JoinCondition join_condition = parseJoinCondition(join_condition_str);
         if (join_condition.left_table.empty() || join_condition.right_table.empty()) {
-            cout << "Error: Invalid JOIN condition format" << endl;
+            cout << "Error Command! Invalid JOIN condition format" << endl;
             return;
         }
         
@@ -634,7 +633,7 @@ void handleJoinSelect(MiniSQL& db, const string& input, bool has_save_as, const 
             displayResults(results, display_columns);
         }
     } else {
-        cout << "Error: Cannot parse JOIN query" << endl;
+        cout << "Error Command! Cannot parse JOIN query" << endl;
         cout << "Input: " << input << endl;
         return;
     }
@@ -643,7 +642,7 @@ void handleJoinSelect(MiniSQL& db, const string& input, bool has_save_as, const 
 void handleDropTable(MiniSQL& db, const string& input) {
     string table_name = trim(input.substr(10));
     if (table_name.empty()) {
-        cout << "Error: Table name cannot be empty" << endl;
+        cout << "Error Command! Table name cannot be empty" << endl;
         return;
     }
     db.dropTable(table_name);
@@ -686,7 +685,7 @@ void handleDelete(MiniSQL& db, const string& input) {
     }
     
     if (table_name.empty()) {
-        cout << "Error: Table name cannot be empty" << endl;
+        cout << "Error Command! Table name cannot be empty" << endl;
         return;
     }
     
@@ -713,9 +712,7 @@ void handleUpdate(MiniSQL& db, const string& input) {
     }
     
     size_t where_pos = upper_input.find("WHERE");
-    
-    string table_name = trim(input.substr(6, set_pos - 6));  // "UPDATE " 长度是7
-    
+    string table_name = trim(input.substr(6, set_pos - 6)); 
     string set_clause;
     string where_str;
     
@@ -743,7 +740,7 @@ void handleUpdate(MiniSQL& db, const string& input) {
     }
     
     unordered_map<string, Value> updates = parseUpdateSet(set_clause, table);
-    
+
     if (updates.empty()) {
         cout << "Error: No valid update assignments found" << endl;
         return;
@@ -803,31 +800,32 @@ void displayResults(const vector<Row>& results, const vector<Column>& columns) {
 
 void showHelp() {
     cout << "\nAvailable commands:" << endl;
-    cout << "  CREATE TABLE <table_name> (<column_definitions>)" << endl;
-    cout << "    Example: CREATE TABLE employees (id INT, name VARCHAR(50), age INT)" << endl;
+    cout << "  CREATE TABLE <table_name> (<column_definitions>);" << endl;
+    cout << "    Example: CREATE TABLE employees (id INT, name VARCHAR(50), age INT);" << endl;
     cout << endl;
-    cout << "  INSERT INTO <table_name> VALUES (...)" << endl;
-    cout << "    Example: INSERT INTO employees VALUES (1, 'Alice', 28)" << endl;
+    cout << "  INSERT INTO <table_name> VALUES (...);" << endl;
+    cout << "    Example: INSERT INTO employees VALUES (1, 'Alice', 28);" << endl;
     cout << endl;
-    cout << "  SELECT <columns> FROM <table_name> [WHERE condition]" << endl;
-    cout << "    Example: SELECT * FROM employees" << endl;
-    cout << "    Example: SELECT name, age FROM employees" << endl;
-    cout << "    Example: SELECT name, age FROM employees WHERE age > 25" << endl;
+    cout << "  SELECT <columns> FROM <table_name> [WHERE condition];" << endl;
+    cout << "    Example: SELECT * FROM employees;" << endl;
+    cout << "    Example: SELECT name, age FROM employees;" << endl;
+    cout << "    Example: SELECT name, age FROM employees WHERE age > 25;" << endl;
+    cout << endl;
+    cout << "  SELECT <columns> FROM <table1> JOIN <table2> ON <condition> [WHERE condition] (SAVE AS <table_name>);" << endl;
+    cout << "    Example: SELECT * FROM employees JOIN departments ON employees.department_id = departments.dept_id;" << endl;
+    cout << "    Example: SELECT employees.name, departments.dept_name FROM employees JOIN departments ON employees.department_id = departments.dept_id;" << endl;
+    cout << "    Example: SELECT employees.name, departments.dept_name FROM employees JOIN departments ON employees.department_id = departments.dept_id SAVE AS choose;" << endl;
     cout << endl;
     cout << "  UPDATE <table_name> SET column=value, ... [WHERE condition]" << endl;
-    cout << "    Example: UPDATE employees SET age = 30 WHERE id = 1" << endl;
-    cout << "    Example: UPDATE employees SET salary = salary * 1.1 WHERE department = 'Sales'" << endl;
+    cout << "    Example: UPDATE employees SET age = 30 WHERE id = 1;" << endl;
+    cout << "    Example: UPDATE employees SET salary = salary * 1.1 WHERE department = 'Sales';" << endl;
     cout << endl;
-    cout << "  DELETE FROM <table_name> [WHERE condition]" << endl;
-    cout << "    Example: DELETE FROM employees WHERE id = 1" << endl;
-    cout << "    Example: DELETE FROM employees WHERE age > 65" << endl;
+    cout << "  DELETE FROM <table_name> [WHERE condition];" << endl;
+    cout << "    Example: DELETE FROM employees WHERE id = 1;" << endl;
+    cout << "    Example: DELETE FROM employees WHERE age > 65;" << endl;
     cout << endl;
-    cout << "  SELECT <columns> FROM <table1> JOIN <table2> ON <condition> [WHERE condition]" << endl;
-    cout << "    Example: SELECT * FROM employees JOIN departments ON employees.department_id = departments.dept_id" << endl;
-    cout << "    Example: SELECT employees.name, departments.dept_name FROM employees JOIN departments ON employees.department_id = departments.dept_id" << endl;
-    cout << endl;
-    cout << "  DROP TABLE <table_name> - Delete a table" << endl;
-    cout << "  SHOW TABLES - List all tables" << endl;
-    cout << "  EXIT - Exit the program" << endl;
-    cout << "  HELP - Show this help message" << endl;
+    cout << "  DROP TABLE <table_name>; - Delete a table" << endl;
+    cout << "  SHOW TABLES; - List all tables" << endl;
+    cout << "  EXIT; - Exit the program" << endl;
+    cout << "  HELP; - Show this help message" << endl;
 }
