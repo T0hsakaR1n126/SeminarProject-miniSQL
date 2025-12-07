@@ -36,12 +36,12 @@ c. Use './../bin/minisql ' to run the project.
 (3)Mac
 a.Open Terminal from Applications/Utilities folder or search via Spotlight.
 b.Use command('cd') to Change the current working directory to the location of file 'src'.
-c.Compile the code using ' clang++ -o Templates Templates.cpp ' to compile the code and a minisql file will be generated, this file do not have .exe with it.
+c.Compile the code using ' clang++ -o ../bin/minisql main.cpp minisql.cpp Helper.cpp ' to compile the code and a minisql file will be generated, this file do not have .exe with it.
 d.Use './../bin/minisql ' to run the project.
 
 3.A Brief Introduction
 
-This is a lightweight SQL database engine, called MiniSQL developed using C++. The project utilizes smart pointers and LRU mechanism for memory lifecycle management, STL containers for processing data collections, regular expressions for parsing SQL statements, and file system operations for data persistence. MiniSQL now supports standard SQL operations CREATE, INSERT, SELECT, JOIN, UPDATE, and DELETE, and has WHERE condition filtering and basic query optimization functions. It uses CSV format for data storage and loading.
+This is a lightweight SQL database engine, called MiniSQL, developed using C++. The project utilizes smart pointers and LRU mechanism for memory lifecycle management, STL containers for processing data collections, regular expressions for parsing SQL statements, and file system operations for data persistence. MiniSQL now supports standard SQL operations CREATE, INSERT, SELECT, JOIN, UPDATE(constant), and DELETE, and has WHERE condition filtering and basic query optimization functions. It uses CSV format for data storage and loading.
 
 
 

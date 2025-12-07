@@ -382,7 +382,7 @@ void handleInsert(MiniSQL& db, const string& input) {
     
     string table_name = trim(input.substr(11, values_pos - 11));
     if (table_name.empty()) {
-        cout << "Error Cammand! Table name cannot be empty" << endl;
+        cout << "Error Command! Table name cannot be empty" << endl;
         return;
     }
     
@@ -394,20 +394,61 @@ void handleInsert(MiniSQL& db, const string& input) {
     vector<string> value_tokens = split(values_str, ',');
     vector<Value> row_values;
     
-    for (const auto& val : value_tokens) {
-        string cleaned_val = val;
-        if (cleaned_val.front() == '\'' && cleaned_val.back() == '\'') {
-            cleaned_val = cleaned_val.substr(1, cleaned_val.length() - 2);
+    auto isValidNumber = [](const string& str) -> bool {
+        if (str.empty()) return false;
+        
+        size_t start = 0;
+        if (str[0] == '-' || str[0] == '+') {
+            start = 1;
+            if (str.length() == 1) return false;
         }
         
-        try {
-            row_values.push_back(stoi(cleaned_val));
-        } catch (...) {
-            try {
-                row_values.push_back(stod(cleaned_val));
-            } catch (...) {
-                row_values.push_back(cleaned_val);
+        bool has_digits = false;
+        bool has_decimal_point = false;
+        
+        for (size_t i = start; i < str.length(); ++i) {
+            char c = str[i];
+            if (c == '.') {
+                if (has_decimal_point) return false; 
+                has_decimal_point = true;
+            } else if (!isdigit(c)) {
+                return false;  
+            } else {
+                has_digits = true;
             }
+        }
+        
+        return has_digits; 
+    };
+    
+    for (const auto& val : value_tokens) {
+        string cleaned_val = trim(val);
+        
+        bool is_quoted_string = (cleaned_val.front() == '\'' && cleaned_val.back() == '\'');
+        if (is_quoted_string) {
+            cleaned_val = cleaned_val.substr(1, cleaned_val.length() - 2);
+            row_values.push_back(cleaned_val);
+            continue;
+        }
+        
+        if (isValidNumber(cleaned_val)) {
+            bool has_decimal_point = (cleaned_val.find('.') != string::npos);
+            
+            if (has_decimal_point) {
+                try {
+                    row_values.push_back(stod(cleaned_val));
+                } catch (...) {
+                    row_values.push_back(cleaned_val);
+                }
+            } else {
+                try {
+                    row_values.push_back(stoi(cleaned_val));
+                } catch (...) {
+                    row_values.push_back(cleaned_val);
+                }
+            }
+        } else {
+            row_values.push_back(cleaned_val);
         }
     }
     

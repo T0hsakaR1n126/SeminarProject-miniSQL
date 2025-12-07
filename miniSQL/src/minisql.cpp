@@ -6,6 +6,7 @@
 #include <regex>       
 #include <filesystem>  
 #include <unordered_map> 
+#include <iomanip>
 
 namespace fs = std::filesystem;
 string trim(const string& str);
@@ -96,8 +97,13 @@ bool Table::saveToCSV() {
     
     for (const auto& row : rows_) {
         for (size_t i = 0; i < row.size(); ++i) {
-            visit([&file](auto&& arg) {
-                file << arg;
+            std::visit([&file](auto&& arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, double>) {
+                    file << std::fixed << std::setprecision(10) << arg;
+                } else {
+                    file << arg;
+                }
             }, row[i]);
             
             if (i < row.size() - 1) file << ",";
@@ -832,7 +838,6 @@ shared_ptr<LogicExpression> WhereParser::parseExpression(const string& expr_str,
             }
         }
     }
-    
     // SingleCondition
     return parseSingleCondition(str, columns);
 }
@@ -1249,7 +1254,7 @@ bool MiniSQL::loadTableFromDisk(const string& table_name, const string& csv_path
             if (sample_rows.empty()) return "VARCHAR";
             
             bool all_integers = true;
-            bool all_doubles = true;
+            bool all_numbers = true; 
             
             for (const auto& row : sample_rows) {
                 vector<string> cells;
@@ -1263,35 +1268,58 @@ bool MiniSQL::loadTableFromDisk(const string& table_name, const string& csv_path
                         
                         if (!cell.empty()) {
                             bool is_integer = true;
-                            for (char c : cell) {
-                                if (!isdigit(c) && c != '-' && c != '+') {
+                            bool has_digits = false;
+                            
+                            size_t start = 0;
+                            if (!cell.empty() && (cell[0] == '-' || cell[0] == '+')) {
+                                start = 1;
+                            }
+                            
+                            for (size_t i = start; i < cell.size(); ++i) {
+                                if (!isdigit(static_cast<unsigned char>(cell[i]))) {
                                     is_integer = false;
                                     break;
                                 }
+                                has_digits = true;
                             }
-                            if (!is_integer) {
+                            
+                            if (!is_integer || !has_digits) {
                                 all_integers = false;
                             }
                             
-                            bool is_double = true;
+                            bool is_number = true;
                             bool has_decimal_point = false;
-                            for (size_t i = 0; i < cell.size(); ++i) {
+                            has_digits = false;
+                            start = 0;
+                            
+                            if (!cell.empty() && (cell[0] == '-' || cell[0] == '+')) {
+                                start = 1;
+                            }
+                            
+                            for (size_t i = start; i < cell.size(); ++i) {
                                 char c = cell[i];
-                                if (!isdigit(c) && c != '-' && c != '+' && c != '.') {
-                                    is_double = false;
+                                if (!isdigit(static_cast<unsigned char>(c)) && c != '.') {
+                                    is_number = false;
                                     break;
                                 }
                                 if (c == '.') {
                                     if (has_decimal_point) {
-                                        is_double = false;
+                                        is_number = false;
                                         break;
                                     }
                                     has_decimal_point = true;
                                 }
+                                if (isdigit(static_cast<unsigned char>(c))) {
+                                    has_digits = true;
+                                }
                             }
-                            if (!is_double) {
-                                all_doubles = false;
+                            
+                            if (!is_number || !has_digits) {
+                                all_numbers = false;
                             }
+                        } else {
+                            all_integers = false;
+                            all_numbers = false;
                         }
                         break;
                     }
@@ -1299,11 +1327,15 @@ bool MiniSQL::loadTableFromDisk(const string& table_name, const string& csv_path
                 }
             }
             
-            if (all_integers) return "INT";
-            if (all_doubles) return "DOUBLE";
-            return "VARCHAR";
+            if (all_integers) {
+                return "INT";
+            } else if (all_numbers) {
+                return "DOUBLE"; 
+            } else {
+                return "VARCHAR";
+            }
         };
-        
+                
         vector<Column> columns;
         for (size_t i = 0; i < col_names.size(); ++i) {
             Column col;

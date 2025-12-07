@@ -28,6 +28,8 @@ void handleSimpleSelect(MiniSQL& db, const string& input);
 void handleJoinSelect(MiniSQL& db, const string& input, bool has_save_as, const string& save_table_name);
 void handleDropTable(MiniSQL& db, const string& input);
 void handleShowTables(MiniSQL& db);
+void handleDelete(MiniSQL& db, const string& input);
+void handleUpdate(MiniSQL& db, const string& input);
 
 // Interface helper functions
 void displayResults(const vector<Row>& results, const vector<Column>& columns);
