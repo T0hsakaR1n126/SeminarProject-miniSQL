@@ -21,9 +21,6 @@ c. Run ' g++ --version '  to verify the installation.
 a. Install Xcode Command Line Tools by running 'xcode-select --install' in Terminal.
 b. Verify installation by running 'clang++ --version' in Terminal. 
 
-2.Problem Description
-
-
 2.Compile and Run the Project
 
 (1)Windows(MSYS2):
@@ -43,6 +40,7 @@ c.Compile the code using ' clang++ -o Templates Templates.cpp ' to compile the c
 d.Use './../bin/minisql ' to run the project.
 
 3.A Brief Introduction
+
 This is a lightweight SQL database engine, called MiniSQL developed using C++. The project utilizes smart pointers and LRU mechanism for memory lifecycle management, STL containers for processing data collections, regular expressions for parsing SQL statements, and file system operations for data persistence. MiniSQL now supports standard SQL operations CREATE, INSERT, SELECT, JOIN, UPDATE, and DELETE, and has WHERE condition filtering and basic query optimization functions. It uses CSV format for data storage and loading.
 
 
