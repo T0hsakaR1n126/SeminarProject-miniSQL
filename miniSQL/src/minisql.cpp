@@ -402,7 +402,6 @@ vector<Row> JoinOptimizer::hashJoin(const Table& left_table, const Table& right_
     for (const auto& col : left_table.columns()) left_cols.push_back(col.name);
     for (const auto& col : right_table.columns()) right_cols.push_back(col.name);
     
-    // 创建完整的列名列表用于WHERE评估
     vector<string> all_columns_for_where = left_cols;
     all_columns_for_where.insert(all_columns_for_where.end(), right_cols.begin(), right_cols.end());
     
